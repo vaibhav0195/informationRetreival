@@ -7,6 +7,15 @@ logger = logging.getLogger(__name__)
 collectionDb = mongoDb.getMongoCollectionClient(host='localhost',port=27017,
                                                 dbName='informationRetreival',collectionName='csv')
 
+def removeTheKey(mapOfInfo,keyToRemove):
+    mapOfInfoWithoutdataFrame = {}
+    for key in mapOfInfo:
+        innerDict = mapOfInfo[key]
+        value = innerDict.pop(keyToRemove,None)
+        mapOfInfoWithoutdataFrame[key] = innerDict
+
+    return mapOfInfoWithoutdataFrame
+
 def informationRetrieval(ch, method, properties, body):
     dataFromQueue = json.loads(body)
     fileName = dataFromQueue['fileName']
@@ -18,6 +27,7 @@ def informationRetrieval(ch, method, properties, body):
     dbUpdateObj = {'_id':fileName,'filePath':filePath}
     for columnName in columnNames:
         mapOfInfo = informationRetreval.analyiseTheFrame(dataFrameObj,columnName)
+        mapOfInfo = removeTheKey(mapOfInfo,'dataFrame')
         analysisAlongTheKeys[columnName] = {'analysis':mapOfInfo}
     dbUpdateObj['analysedData'] = analysisAlongTheKeys
     mongoObj = collectionDb.update_many(

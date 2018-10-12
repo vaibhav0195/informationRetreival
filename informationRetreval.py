@@ -1,8 +1,11 @@
 import pandas as pd
 import json
-import math
+import math,logging
 import numpy as np
 
+
+logging.basicConfig(format='%(levelname)s:%(asctime)s:%(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 def getTheDataFrame(filePath):
     return pd.read_csv(filePath)
 
@@ -20,6 +23,7 @@ def getTheColmnNames(dataFrameObj,blackList=['Unnamed: 0']):
     mapOfDtypeToCol = {}
     for colName in mapOfNameToDtype:
         if colName in blackList:
+            nameOfHeaders.remove(colName)
             continue
         dtype = str(mapOfNameToDtype[colName])
         if mapOfDtypeToCol.has_key(dtype):
@@ -35,9 +39,9 @@ def doBasicCalulation(dataFrameObj):
     stdDevOfAllColumns  = dataFrameObj.std()
     maxOfAllColumns     = dataFrameObj.max()
     minDevOfAllColumns  = dataFrameObj.min()
-    return [meanOfAllColumns,medianOfAllColumns,
-            stdDevOfAllColumns,
-            maxOfAllColumns,minDevOfAllColumns]
+    return [dict(meanOfAllColumns),dict(medianOfAllColumns),
+            dict(stdDevOfAllColumns),
+            dict(maxOfAllColumns),dict(minDevOfAllColumns)]
 
 def getMappingOfHeaderAndDataFrame(dataFrameObj,columnNameToAnalyise,blackList=['Unnamed: 0']):
     '''
@@ -93,25 +97,30 @@ def calculateTheModeDataForStringObject(mapColNameToFrame,columnNameToAnalyise,b
         modeDictionary = {}
         dataFrameForCol = mapColNameToFrame[uniquecolumnNameValue]['dataFrame']
         for columnName in dataFrameForCol:
-            if columnName == columnNameToAnalyise or columnName in blackListColmn:
-                continue
-            if dataFrameForCol[columnName].dtype == 'object':
-                dataFrameForCol[columnName].fillna('nan')
-            else:
-                dataFrameForCol[columnName].fillna(-1)
-            mostUsedValForCol = dataFrameForCol[columnName].mode()
-            if mostUsedValForCol.shape[0] == dataFrameForCol.shape[0]:
-                modeDictionary[columnName] = {'mode':None}
-                #no mode value if the length of mode is equal to dataframe
-            else:
-                #get the general answer
-                filterRows = dataFrameForCol[columnName] == mostUsedValForCol[0]
-                filteredRowsWithTheMode = dataFrameForCol[filterRows]
-                seriesToSet = filteredRowsWithTheMode['title']
-                if seriesToSet.shape[0] <= 0:
-                    seriesToSet=None
-                innerData = {'mode':mostUsedValForCol,'title_satisfying':seriesToSet}
-                modeDictionary[columnName] = innerData
+            try:
+                if columnName == columnNameToAnalyise or columnName in blackListColmn:
+                    continue
+                if dataFrameForCol[columnName].dtype == 'object':
+                    dataFrameForCol[columnName].fillna('nan')
+                else:
+                    dataFrameForCol[columnName].fillna(-1)
+                mostUsedValForCol = dataFrameForCol[columnName].mode()
+                if mostUsedValForCol.shape[0] == dataFrameForCol.shape[0] or mostUsedValForCol.shape[0] == 0:
+                    modeDictionary[columnName] = {'mode':None}
+                    #no mode value if the length of mode is equal to dataframe
+                else:
+                    #get the general answer
+                    filterRows = dataFrameForCol[columnName] == mostUsedValForCol[0]
+                    filteredRowsWithTheMode = dataFrameForCol[filterRows]
+                    seriesToSet = filteredRowsWithTheMode['title']
+                    if seriesToSet.shape[0] <= 0:
+                        seriesToSet=None
+                        innerData = {'mode': dict(mostUsedValForCol), 'title_satisfying': seriesToSet}
+                    else:
+                        innerData = {'mode':dict(mostUsedValForCol),'title_satisfying':list(set(list(seriesToSet)))}
+                    modeDictionary[columnName] = innerData
+            except Exception,e:
+                logger.exception(e)
         mapColNameToFrame[uniquecolumnNameValue]['mode'] = modeDictionary
 
     return mapColNameToFrame
@@ -127,17 +136,17 @@ def doInterColumnAnalysis(mapColNameToFrame,uniqueColNames):
             for jdx in range(len(colmnWithModes)):
                 frstColmnToAnalysis = colmnWithModes[idx]
                 scndColmnToAnalysis = colmnWithModes[jdx]
-                modeFrstColmn = dict(modesOfdictionaryColmn[frstColmnToAnalysis]['mode']).values()[0]
-                modeScndColmn = dict(modesOfdictionaryColmn[scndColmnToAnalysis]['mode']).values()[0]
+                modeFrstColmn = modesOfdictionaryColmn[frstColmnToAnalysis]['mode'].values()[0]
+                modeScndColmn = modesOfdictionaryColmn[scndColmnToAnalysis]['mode'].values()[0]
                 filterRows = (dataFrameForCol[frstColmnToAnalysis] == modeFrstColmn) & (dataFrameForCol[scndColmnToAnalysis] == modeScndColmn)
                 filteredRowsWithTheMode = dataFrameForCol[filterRows]
                 seriesToSet = filteredRowsWithTheMode['title']
                 if not crossColmnAnalysis.has_key(frstColmnToAnalysis):
                     crossColmnAnalysis[frstColmnToAnalysis] = {}
-                crossColmnAnalysis[frstColmnToAnalysis][scndColmnToAnalysis] = {'data': seriesToSet}
+                crossColmnAnalysis[frstColmnToAnalysis][scndColmnToAnalysis] = {'data': list(set(list(seriesToSet)))}
                 if not crossColmnAnalysis.has_key(scndColmnToAnalysis):
                     crossColmnAnalysis[scndColmnToAnalysis] = {}
-                crossColmnAnalysis[frstColmnToAnalysis][scndColmnToAnalysis] = {'data': seriesToSet}
+                crossColmnAnalysis[frstColmnToAnalysis][scndColmnToAnalysis] = {'data': list(set(list(seriesToSet)))}
         mapColNameToFrame[uniqueValuePresent]['crossColumnAnalysis'] = crossColmnAnalysis
         # print 'got the colmnWithModes'
 
@@ -145,7 +154,7 @@ def doInterColumnAnalysis(mapColNameToFrame,uniqueColNames):
 
 def analyiseTheFrame(dataFrameObj,columnNameToAnalyise='platform',blackList=['Unnamed: 0']):
     # dataFrameObj.fillna(0)
-    jsonPath = saveDir+columnNameToAnalyise+'.json'
+    # jsonPath = saveDir+columnNameToAnalyise+'.json'
     headerNames,mapOfDtypetoCol = getTheColmnNames(dataFrameObj,blackList)
     headerNames = list(set(headerNames)-set(blackList))
     mapColNameToFrame = getMappingOfHeaderAndDataFrame(dataFrameObj,columnNameToAnalyise,blackList)
@@ -154,6 +163,7 @@ def analyiseTheFrame(dataFrameObj,columnNameToAnalyise='platform',blackList=['Un
     mapColNameToFrame = doInterColumnAnalysis(mapColNameToFrame,headerNames)
     print 'done with the basic analysis'
     return mapColNameToFrame
+
 if __name__=='__main__':
     csvPath = '/home/yoda/ign_subset.csv'
     reviews = pd.read_csv(csvPath)
