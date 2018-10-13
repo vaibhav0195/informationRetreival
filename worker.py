@@ -5,7 +5,7 @@ from databaseAndQueue import mongoDb
 logging.basicConfig(format='%(levelname)s:%(asctime)s:%(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 collectionDb = mongoDb.getMongoCollectionClient(host='localhost',port=27017,
-                                                dbName='informationRetreival',collectionName='csv')
+                                                dbName='informationRetreival',collectionName='dataframeAnalysis')
 
 def removeTheKey(mapOfInfo,keyToRemove):
     mapOfInfoWithoutdataFrame = {}
@@ -33,7 +33,7 @@ def informationRetrieval(ch, method, properties, body):
     mongoObj = collectionDb.update_many(
         {'_id': fileName},
         {
-            "$set": dbUpdateObj
+            "$set": {'processed':dbUpdateObj}
         }
     )
     logger.info('got the {} file from queue.'.format(body))

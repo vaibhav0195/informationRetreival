@@ -69,7 +69,7 @@ def getMappingOfHeaderAndDataFrame(dataFrameObj,columnNameToAnalyise,blackList=[
         mean,median,stdDev,maxVal,minVal = doBasicCalulation(filtered_reviews)
         infoMap = {'mean':mean,'median':median,'stdDev':stdDev
                     ,'maxVal':maxVal,'minVal':minVal,'dataFrame':filtered_reviews}
-        mapNameToDf[colName] = infoMap
+        mapNameToDf[str(colName)] = infoMap
 
     return mapNameToDf
 
@@ -115,13 +115,13 @@ def calculateTheModeDataForStringObject(mapColNameToFrame,columnNameToAnalyise,b
                     seriesToSet = filteredRowsWithTheMode['title']
                     if seriesToSet.shape[0] <= 0:
                         seriesToSet=None
-                        innerData = {'mode': dict(mostUsedValForCol), 'title_satisfying': seriesToSet}
+                        innerData = {'mode': list(set(list(mostUsedValForCol))), 'title_satisfying': seriesToSet}
                     else:
-                        innerData = {'mode':dict(mostUsedValForCol),'title_satisfying':list(set(list(seriesToSet)))}
+                        innerData = {'mode': list(set(list(mostUsedValForCol))),'title_satisfying':list(set(list(seriesToSet)))}
                     modeDictionary[columnName] = innerData
             except Exception,e:
                 logger.exception(e)
-        mapColNameToFrame[uniquecolumnNameValue]['mode'] = modeDictionary
+        mapColNameToFrame[str(uniquecolumnNameValue)]['mode'] = modeDictionary
 
     return mapColNameToFrame
 
@@ -136,18 +136,18 @@ def doInterColumnAnalysis(mapColNameToFrame,uniqueColNames):
             for jdx in range(len(colmnWithModes)):
                 frstColmnToAnalysis = colmnWithModes[idx]
                 scndColmnToAnalysis = colmnWithModes[jdx]
-                modeFrstColmn = modesOfdictionaryColmn[frstColmnToAnalysis]['mode'].values()[0]
-                modeScndColmn = modesOfdictionaryColmn[scndColmnToAnalysis]['mode'].values()[0]
+                modeFrstColmn = modesOfdictionaryColmn[frstColmnToAnalysis]['mode'][0]
+                modeScndColmn = modesOfdictionaryColmn[scndColmnToAnalysis]['mode'][0]
                 filterRows = (dataFrameForCol[frstColmnToAnalysis] == modeFrstColmn) & (dataFrameForCol[scndColmnToAnalysis] == modeScndColmn)
                 filteredRowsWithTheMode = dataFrameForCol[filterRows]
                 seriesToSet = filteredRowsWithTheMode['title']
-                if not crossColmnAnalysis.has_key(frstColmnToAnalysis):
-                    crossColmnAnalysis[frstColmnToAnalysis] = {}
-                crossColmnAnalysis[frstColmnToAnalysis][scndColmnToAnalysis] = {'data': list(set(list(seriesToSet)))}
-                if not crossColmnAnalysis.has_key(scndColmnToAnalysis):
-                    crossColmnAnalysis[scndColmnToAnalysis] = {}
-                crossColmnAnalysis[frstColmnToAnalysis][scndColmnToAnalysis] = {'data': list(set(list(seriesToSet)))}
-        mapColNameToFrame[uniqueValuePresent]['crossColumnAnalysis'] = crossColmnAnalysis
+                if not crossColmnAnalysis.has_key(str(frstColmnToAnalysis)):
+                    crossColmnAnalysis[str(frstColmnToAnalysis)] = {}
+                crossColmnAnalysis[str(frstColmnToAnalysis)][str(scndColmnToAnalysis)] = {'data': list(set(list(seriesToSet)))}
+                if not crossColmnAnalysis.has_key(str(scndColmnToAnalysis)):
+                    crossColmnAnalysis[str(scndColmnToAnalysis)] = {}
+                crossColmnAnalysis[str(frstColmnToAnalysis)][str(scndColmnToAnalysis)] = {'data': list(set(list(seriesToSet)))}
+        mapColNameToFrame[str(uniqueValuePresent)]['crossColumnAnalysis'] = crossColmnAnalysis
         # print 'got the colmnWithModes'
 
     return mapColNameToFrame

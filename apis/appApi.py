@@ -46,27 +46,27 @@ def upload_file_browse():
 				mapOfNameToDtype = dict(dtypesOfColumns)
 				mapOfNameToDtype = [(str(nameOfColumn),str(mapOfNameToDtype[nameOfColumn])) for nameOfColumn in mapOfNameToDtype]
 				#publishing data to queue
-				dataToPublish = {'filePath':pathOfSavedFile,'fileName':filename}
-				collectionDbAnalysis = mongoDb.getMongoCollectionClient(host='localhost',
-																port=27017,
-																dbName='informationRetreival',
-																collectionName='dataframeAnalysis')
-
-				collectionDbHeaderAndType = mongoDb.getMongoCollectionClient(host='localhost',
-																port=27017,
-																dbName='informationRetreival',
-																collectionName='dataframeHeadAndDtype')
-				channel = getQueueObj()
-				channel.basic_publish(exchange='',
-									  routing_key='informationRetreival',
-									  body=json.dumps(dataToPublish),
-									  properties=pika.BasicProperties(
-										  delivery_mode=2,  # make message persistent
-									  ))
-				dataToStoreInMongo = {'_id':filename,'filePath':pathOfSavedFile}
-				dataToStoreInMongoHeadersIndType = {'fileName':filename,'headers':mapOfNameToDtype}
-				collectionDbAnalysis.insert_one(dataToStoreInMongo)
-				collectionDbHeaderAndType.insert_one(dataToStoreInMongoHeadersIndType)
+				# dataToPublish = {'filePath':pathOfSavedFile,'fileName':filename}
+				# collectionDbAnalysis = mongoDb.getMongoCollectionClient(host='localhost',
+				# 												port=27017,
+				# 												dbName='informationRetreival',
+				# 												collectionName='dataframeAnalysis')
+				#
+				# collectionDbHeaderAndType = mongoDb.getMongoCollectionClient(host='localhost',
+				# 												port=27017,
+				# 												dbName='informationRetreival',
+				# 												collectionName='dataframeHeadAndDtype')
+				# channel = getQueueObj()
+				# channel.basic_publish(exchange='',
+				# 					  routing_key='informationRetreival',
+				# 					  body=json.dumps(dataToPublish),
+				# 					  properties=pika.BasicProperties(
+				# 						  delivery_mode=2,  # make message persistent
+				# 					  ))
+				# dataToStoreInMongo = {'_id':filename,'filePath':pathOfSavedFile}
+				# dataToStoreInMongoHeadersIndType = {'fileName':filename,'headers':mapOfNameToDtype}
+				# collectionDbAnalysis.insert_one(dataToStoreInMongo)
+				# collectionDbHeaderAndType.insert_one(dataToStoreInMongoHeadersIndType)
 				jsonToReturn = {'status':'ok','fileName':filename,'csvHeaders':mapOfNameToDtype}
 			except Exception,e:
 				logger.exception(e)
@@ -86,5 +86,6 @@ def getTheParsedDataFromDb():
 		#.find_one({"author": "Mike"})
 		collectionDb = mongoDb.getMongoCollectionClient(host='localhost',port=27017,
 													dbName='informationRetreival',collectionName='dataframeAnalysis')
-		collectionDb.find_one({"_id": fileName})
+		dataDb = collectionDb.find_one({"_id": fileName})
+		logger.info('got the data from mongo db for {}'.format(fileName))
 		return True
