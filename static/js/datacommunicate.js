@@ -104,15 +104,20 @@ $(document).on("click", "#doAnalysis", function(){
             status = parsedData.status
             if (status == 'ok')
             {
-                headerData = parsedData.csvHeaders
-                tableIdToUse = 'nameAndDtypeOfColumn'
-                nameOfFile = parsedData.fileName
-                var arrayLength = headerData.length;
+                uniqueValuesOfColumn = parsedData.columnModeData
+                mapOfValuesOfColumn = parsedData.columnValues
+                otherColumnAlongwhichAnalysis = parsedData.columnHeaders
+                //tableID,columnData,idofTableValues,headerValues
+                //datatowrite,elementType,classListString,idToAssign,data-[name],valueofit,typeOfelement
+                var tableID = 'uniqueValuesAndMode';
+                var columnData = [[]]
+                fileName = parsedData.fileName
+                var numRows = uniqueValuesOfColumn.length;
+                var numColumns = otherColumnAlongwhichAnalysis.length;
+
                 for (var i = 0; i < arrayLength; i++)
                     {
-                    nameOfColumn = headerData[i][0]
-                    dTypeOfColumn = headerData[i][1]
-                    addRow(tableIdToUse,nameOfColumn,dTypeOfColumn,nameOfFile)
+
                     }
                  $("#uploaddiv").show();
             }
@@ -157,4 +162,60 @@ function addRow(tableID,nameofColumn,dTypeOfColumn,nameOfFile)
     cell1.appendChild(element1);
     var  cell2= row.insertCell(1);
     cell2.appendChild(element2);
+}
+
+function addRowProtoType(tableID,columnData,idofTableValues,headerValues)
+{   /*
+    this function adds the row to a table specified by the tableID
+    tableId : id of table to fill the values
+    columnData : data about each column in the row
+    ifofTablevalues : values to set to the each element
+    headerValue : weather its a header element or not.(if 1 then it is header else no)
+    */
+    if (headervalues ==1)
+    {
+        var tableBody = document.getElementById(tableID).getElementsByTagName('thead')[0];
+    }
+    else
+    {
+        var tableBody = document.getElementById(tableID).getElementsByTagName('tbody')[0];
+    }
+
+    var rowCount = tableBody.rows.length;
+    var row = tableBody.insertRow(rowCount);
+
+    var numColumns = columnData.length;
+    for (var i = 0; i < numColumns; i++)
+    {
+        //array to write in the column is of format
+        //[datatowrite,elementType,classListString,idToAssign,data-[name],valueofit,typeOfelement]
+        var cell = row.insertCell(i);
+        var currentDatatowrite = columnData[i]
+        var dataToWrite = currentDatatowrite[0];
+        var elementType = currentDatatowrite[1];
+        var classList = currentDatatowrite[2].split('::');
+        var numClasses = classList.length;
+        var idForElement = currentDatatowrite[3];
+        var dataElementName = currentDatatowrite[4];
+        var dataElementValue = currentDatatowrite[5];
+        var typeOfElement = currentDatatowrite[6];
+        var element1 = document.createElement(elementType);
+        element1.innerHTML=dataToWrite;
+        element1.setAttribute(dataElementName,dataElementValue);
+        element1.setAttribute('id',idForElement);
+        if typeOfElement == null
+        {
+            console.log('type is null so not setting it')
+        }
+        else
+        {
+            element1.setAttribute("type",typeOfElement);
+        }
+        for (var j = 0; j < numClasses; j++)
+        {
+            element1.classList.add(classList[j]);
+        }
+        cell1.appendChild(element1);
+
+    }
 }

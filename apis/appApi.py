@@ -87,5 +87,28 @@ def getTheParsedDataFromDb():
 		collectionDb = mongoDb.getMongoCollectionClient(host='localhost',port=27017,
 													dbName='informationRetreival',collectionName='dataframeAnalysis')
 		dataDb = collectionDb.find_one({"_id": fileName})
-		logger.info('got the data from mongo db for {}'.format(fileName))
-		return True
+		uniqueValueNameMApToMode = {}
+		if columnName in dataDb['processed']['analysedData']:
+			dataForTheColumnName = dataDb['processed']['analysedData'][columnName]['analysis']
+			for uniqueColumnVal in dataForTheColumnName:
+				uniqueValueNameMApToMode[uniqueColumnVal] = {}
+				modeDataOfColumn = dataForTheColumnName[uniqueColumnVal]['mode']
+				columnHeaders = modeDataOfColumn.keys()
+				for columnValueToAnalyse in modeDataOfColumn:
+					modeData = modeDataOfColumn[columnValueToAnalyse]['mode']
+
+					valueToSetForColumn = {'mode':None,'samples':None,'relevant':False}
+					if modeData is not None:
+						if len(modeData) == 1:
+							titleSatisfying = modeDataOfColumn[columnValueToAnalyse]['title_satisfying']
+							valueToSetForColumn['mode'] = modeData[0]
+							valueToSetForColumn['samples'] = titleSatisfying[:2]
+							valueToSetForColumn['relevant'] = True
+					uniqueValueNameMApToMode[uniqueColumnVal][columnValueToAnalyse] = valueToSetForColumn
+			logger.info('got the data from mongo db for {}'.format(fileName))
+
+			return json.dumps({'status':'ok','columnModeData':uniqueValueNameMApToMode
+				,'columnValues':uniqueValueNameMApToMode.keys(),
+				   'columnHeaders':columnHeaders,
+				   'fileName':fileName
+				})
