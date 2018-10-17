@@ -69,7 +69,7 @@ def getMappingOfHeaderAndDataFrame(dataFrameObj,columnNameToAnalyise,blackList=[
         mean,median,stdDev,maxVal,minVal = doBasicCalulation(filtered_reviews)
         infoMap = {'mean':mean,'median':median,'stdDev':stdDev
                     ,'maxVal':maxVal,'minVal':minVal,'dataFrame':filtered_reviews}
-        mapNameToDf[str(colName)] = infoMap
+        mapNameToDf[str(colName).replace('.','_-_')] = infoMap
 
     return mapNameToDf
 
@@ -110,14 +110,14 @@ def calculateTheModeDataForStringObject(mapColNameToFrame,columnNameToAnalyise,b
                     #no mode value if the length of mode is equal to dataframe
                 else:
                     #get the general answer
-                    filterRows = dataFrameForCol[columnName] == mostUsedValForCol[0]
-                    filteredRowsWithTheMode = dataFrameForCol[filterRows]
-                    seriesToSet = filteredRowsWithTheMode['title']
-                    if seriesToSet.shape[0] <= 0:
-                        seriesToSet=None
-                        innerData = {'mode': list(set(list(mostUsedValForCol))), 'title_satisfying': seriesToSet}
-                    else:
-                        innerData = {'mode': list(set(list(mostUsedValForCol))),'title_satisfying':list(set(list(seriesToSet)))}
+                    # filterRows = dataFrameForCol[columnName] == mostUsedValForCol[0]
+                    # filteredRowsWithTheMode = dataFrameForCol[filterRows]
+                    # seriesToSet = filteredRowsWithTheMode['title']
+                    # if seriesToSet.shape[0] <= 0:
+                    #     seriesToSet=None
+                    #     innerData = {'mode': list(set(list(mostUsedValForCol))), 'title_satisfying': seriesToSet}
+                    # else:
+                    innerData = {'mode': list(set(list(mostUsedValForCol)))}
                     modeDictionary[columnName] = innerData
             except Exception,e:
                 logger.exception(e)
@@ -141,16 +141,58 @@ def doInterColumnAnalysis(mapColNameToFrame,uniqueColNames):
                 filterRows = (dataFrameForCol[frstColmnToAnalysis] == modeFrstColmn) & (dataFrameForCol[scndColmnToAnalysis] == modeScndColmn)
                 filteredRowsWithTheMode = dataFrameForCol[filterRows]
                 seriesToSet = filteredRowsWithTheMode['title']
-                if not crossColmnAnalysis.has_key(str(frstColmnToAnalysis)):
-                    crossColmnAnalysis[str(frstColmnToAnalysis)] = {}
-                crossColmnAnalysis[str(frstColmnToAnalysis)][str(scndColmnToAnalysis)] = {'data': list(set(list(seriesToSet)))}
-                if not crossColmnAnalysis.has_key(str(scndColmnToAnalysis)):
-                    crossColmnAnalysis[str(scndColmnToAnalysis)] = {}
-                crossColmnAnalysis[str(frstColmnToAnalysis)][str(scndColmnToAnalysis)] = {'data': list(set(list(seriesToSet)))}
+
+                if not crossColmnAnalysis.has_key(str(frstColmnToAnalysis).replace('.','_-_')):
+                    crossColmnAnalysis[str(frstColmnToAnalysis).replace('.','_-_')] = {}
+                crossColmnAnalysis[str(frstColmnToAnalysis).replace('.','_-_')][str(scndColmnToAnalysis).replace('.','_-_')] = {'data': list(set(list(seriesToSet)))}
+
+                if not crossColmnAnalysis.has_key(str(scndColmnToAnalysis).replace('.','_-_')):
+                    crossColmnAnalysis[str(scndColmnToAnalysis).replace('.','_-_')] = {}
+                crossColmnAnalysis[str(scndColmnToAnalysis).replace('.','_-_')][str(frstColmnToAnalysis).replace('.','_-_')] = {'data': list(set(list(seriesToSet)))}
         mapColNameToFrame[str(uniqueValuePresent)]['crossColumnAnalysis'] = crossColmnAnalysis
         # print 'got the colmnWithModes'
 
     return mapColNameToFrame
+
+def calculateDistributionOfDatadataFrame(mapColumnNameToFrame,columnNameToAnalyse,blackList):
+
+    mapUniqueColData = {}
+    for uniqueValuesOfColumn in mapColumnNameToFrame:
+        dataFrameForColumn = mapColumnNameToFrame[uniqueValuesOfColumn]['dataFrame']
+        dtypesOfColumns = dataFrameForColumn.dtypes
+        mapOfNameToDtype = dict(dtypesOfColumns)
+        distributionDataForColumn = {}
+        for columnName in dataFrameForColumn:
+            if columnName not in blackList and columnName not in columnNameToAnalyse:
+                distributionDataForColumn[columnName] = {}
+                uniqueValuesforThecolumn = dict(dataFrameForColumn[columnName].value_counts())
+                uniqueValuesforThecolumn = {str(k).replace('.',':;:'): int(v) for k, v in uniqueValuesforThecolumn.iteritems()}
+                # uniqueValuesforThecolumn = dict(dataFrameForColumn.groupby([columnName]).count())
+                logger.info('found {} number of unique information'.format(len(uniqueValuesforThecolumn)))
+                if 'int' in str(mapOfNameToDtype[columnName]) or 'float' in str(mapOfNameToDtype[columnName]):
+
+                    logger.debug('the type of column is {} so also adding max,min,median,mean,mode of column'.format(len(uniqueValuesforThecolumn)))
+                    distributionDataForColumn[columnName] = {'distribution':uniqueValuesforThecolumn,
+                                                             'min':mapColumnNameToFrame[uniqueValuesOfColumn]['minVal'][columnName],
+                                                             'max':mapColumnNameToFrame[uniqueValuesOfColumn]['maxVal'][columnName],
+                                                             'median':mapColumnNameToFrame[uniqueValuesOfColumn]['median'][columnName]}
+                else:
+                    distributionDataForColumn[columnName] = {'distribution': uniqueValuesforThecolumn,
+                                                             'min':None,
+                                                             'max':None,
+                                                             'median':None}
+
+                modeValuesForcolumn = mapColumnNameToFrame[uniqueValuesOfColumn]['mode'][columnName]['mode']
+                if modeValuesForcolumn is None:
+                    distributionDataForColumn[columnName]['mode'] = None
+                elif len(modeValuesForcolumn) == 0:
+                    distributionDataForColumn[columnName]['mode'] = None
+                else:
+                    distributionDataForColumn[columnName]['mode'] = modeValuesForcolumn[0]
+        mapUniqueColData[str(uniqueValuesOfColumn)] = distributionDataForColumn
+
+
+    return mapUniqueColData
 
 def analyiseTheFrame(dataFrameObj,columnNameToAnalyise='platform',blackList=['Unnamed: 0']):
     # dataFrameObj.fillna(0)
@@ -160,7 +202,8 @@ def analyiseTheFrame(dataFrameObj,columnNameToAnalyise='platform',blackList=['Un
     mapColNameToFrame = getMappingOfHeaderAndDataFrame(dataFrameObj,columnNameToAnalyise,blackList)
     # numHeaders = len(headerNames)
     mapColNameToFrame = calculateTheModeDataForStringObject(mapColNameToFrame,columnNameToAnalyise,blackList)
-    mapColNameToFrame = doInterColumnAnalysis(mapColNameToFrame,headerNames)
+    mapColNameToFrame = calculateDistributionOfDatadataFrame(mapColNameToFrame,columnNameToAnalyise,blackList)
+    # mapColNameToFrame = doInterColumnAnalysis(mapColNameToFrame,headerNames)
     print 'done with the basic analysis'
     return mapColNameToFrame
 
@@ -168,6 +211,6 @@ if __name__=='__main__':
     csvPath = '/home/yoda/ign_subset.csv'
     reviews = pd.read_csv(csvPath)
     saveDir = '/home/gabbar/mlocr_data/informationretreival/jsonFolder'
-    analyiseTheFrame(reviews,'platform')
+    analyiseTheFrame(reviews,'release_year')
 # nameOfColumns = getTheColmnNames(reviews)
 # print nameOfColumns

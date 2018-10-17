@@ -24,6 +24,17 @@ def getQueueObj():
 	channel.queue_declare(queue='informationRetreival', durable=True)
 	return channel
 
+def getTheModeOfHeaders(dataFrameObj):
+	columnNameToUse = []
+	for columnName in dataFrameObj:
+		mostUsedValForCol = dataFrameObj[columnName].mode()
+		if mostUsedValForCol.shape[0] == dataFrameObj[columnName].shape[0] or mostUsedValForCol.shape[0] ==0:
+			continue
+		else:
+			columnNameToUse.append(columnName)
+
+	return columnNameToUse
+
 @appAPIs.route('/', methods=['GET'])
 def newDemoScreen():
 	return render_template('index.html')
@@ -43,15 +54,16 @@ def upload_file_browse():
 
 				dataFrameObj = pd.read_csv(pathOfSavedFile)
 				dtypesOfColumns = dataFrameObj.dtypes
+				columnNameToUse = getTheModeOfHeaders(dataFrameObj)
 				mapOfNameToDtype = dict(dtypesOfColumns)
-				mapOfNameToDtype = [(str(nameOfColumn),str(mapOfNameToDtype[nameOfColumn])) for nameOfColumn in mapOfNameToDtype]
+				mapOfNameToDtype = [(str(nameOfColumn),str(mapOfNameToDtype[nameOfColumn]),nameOfColumn in columnNameToUse) for nameOfColumn in mapOfNameToDtype]
 				#publishing data to queue
 				# dataToPublish = {'filePath':pathOfSavedFile,'fileName':filename}
 				# collectionDbAnalysis = mongoDb.getMongoCollectionClient(host='localhost',
 				# 												port=27017,
 				# 												dbName='informationRetreival',
 				# 												collectionName='dataframeAnalysis')
-				#
+                #
 				# collectionDbHeaderAndType = mongoDb.getMongoCollectionClient(host='localhost',
 				# 												port=27017,
 				# 												dbName='informationRetreival',
@@ -74,7 +86,6 @@ def upload_file_browse():
 			logger.info('returing the data {}'.format(mapOfNameToDtype))
 			return json.dumps(jsonToReturn)
 
-
 @appAPIs.route('/getTheJsonResponse', methods=['POST'])
 def getTheParsedDataFromDb():
 	logger.info('got the request')
@@ -92,23 +103,61 @@ def getTheParsedDataFromDb():
 			dataForTheColumnName = dataDb['processed']['analysedData'][columnName]['analysis']
 			for uniqueColumnVal in dataForTheColumnName:
 				uniqueValueNameMApToMode[uniqueColumnVal] = {}
-				modeDataOfColumn = dataForTheColumnName[uniqueColumnVal]['mode']
+				modeDataOfColumn = dataForTheColumnName[uniqueColumnVal]
+				# dataForColumn = dataForTheColumnName[uniqueColumnVal]
 				columnHeaders = modeDataOfColumn.keys()
 				for columnValueToAnalyse in modeDataOfColumn:
 					modeData = modeDataOfColumn[columnValueToAnalyse]['mode']
 
 					valueToSetForColumn = {'mode':None,'samples':None,'relevant':False}
 					if modeData is not None:
-						if len(modeData) == 1:
-							titleSatisfying = modeDataOfColumn[columnValueToAnalyse]['title_satisfying']
-							valueToSetForColumn['mode'] = modeData[0]
-							valueToSetForColumn['samples'] = titleSatisfying[:2]
-							valueToSetForColumn['relevant'] = True
+						# if len(modeData) == 1:
+						# titleSatisfying = modeDataOfColumn[columnValueToAnalyse]['title_satisfying']
+						valueToSetForColumn['mode'] = modeData
+						valueToSetForColumn['samples'] = []
+						valueToSetForColumn['relevant'] = True
 					uniqueValueNameMApToMode[uniqueColumnVal][columnValueToAnalyse] = valueToSetForColumn
 			logger.info('got the data from mongo db for {}'.format(fileName))
+			columnHeaders.insert(0, columnName)
+			return json.dumps(
+				{
+				'status':'ok',
+				'columnModeData':  uniqueValueNameMApToMode,
+				'columnValues':uniqueValueNameMApToMode.keys(),
+				'columnHeaders': columnHeaders,
+				'fileName':fileName
+				}
+							)
 
-			return json.dumps({'status':'ok','columnModeData':uniqueValueNameMApToMode
-				,'columnValues':uniqueValueNameMApToMode.keys(),
-				   'columnHeaders':columnHeaders,
-				   'fileName':fileName
-				})
+@appAPIs.route('/getTheAnalysisData', methods=['POST'])
+def getTheAnalysedData():
+	logger.info('got the request')
+	folder = os.path.abspath("static/csv/")
+	if request.method == 'POST':
+		data = json.loads(request.data)
+		dataAboutThecell = data['columnToAnalyse']
+		dataList = dataAboutThecell.split(':;:')
+		columnvalue,columnName,rowValue,rowName,fileName = dataList[0],dataList[1],dataList[2],dataList[3],dataList[4]
+		# columnName = data['columnToAnalyse']
+		#.find_one({"author": "Mike"})
+		collectionDb = mongoDb.getMongoCollectionClient(host='localhost',port=27017,
+													dbName='informationRetreival',collectionName='dataframeAnalysis')
+		dataDb = collectionDb.find_one({"_id": fileName})
+		uniqueValueNameMApToMode = {}
+		if rowName in dataDb['processed']['analysedData']:
+			dataForTheColumnName = dataDb['processed']['analysedData'][rowName]['analysis']
+			modeDataOfCellRow = dataForTheColumnName[rowValue][columnName]
+		if columnName in dataDb['processed']['analysedData']:
+			dataForTheColumnName = dataDb['processed']['analysedData'][columnName]['analysis']
+			modeDataOfCellColumn = dataForTheColumnName[columnvalue][rowName]
+		return json.dumps(
+			{
+				'status':'ok',
+				'columnData':modeDataOfCellColumn,
+				'rowData':modeDataOfCellRow,
+				'rowHeader':rowName,
+				'columnHeader':columnName
+			}
+
+
+							)

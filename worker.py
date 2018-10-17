@@ -7,6 +7,10 @@ logger = logging.getLogger(__name__)
 collectionDb = mongoDb.getMongoCollectionClient(host='localhost',port=27017,
                                                 dbName='informationRetreival',collectionName='dataframeAnalysis')
 
+collectionDbHeaderInfo = mongoDb.getMongoCollectionClient(host='localhost',port=27017,
+													dbName='informationRetreival',collectionName='dataframeHeadAndDtype')
+
+
 def removeTheKey(mapOfInfo,keyToRemove):
     mapOfInfoWithoutdataFrame = {}
     for key in mapOfInfo:
@@ -21,14 +25,21 @@ def informationRetrieval(ch, method, properties, body):
     fileName = dataFromQueue['fileName']
     filePath = dataFromQueue['filePath']
     dataFrameObj = informationRetreval.getTheDataFrame(filePath)
-
-    columnNames,dtypMap = informationRetreval.getTheColmnNames(dataFrameObj)
+    dataDb = collectionDbHeaderInfo.find_one({"fileName": fileName})
+    columnUsefullMap = {}
+    blackListColumns = []
+    for dataOfColumn in dataDb['headers']:
+        columnUsefullMap[dataOfColumn[0]] = dataOfColumn[2]
+        if not dataOfColumn[2]:
+            blackListColumns.append(dataOfColumn[0])
+    columnNames,dtypMap = informationRetreval.getTheColmnNames(dataFrameObj,blackList=blackListColumns)
     analysisAlongTheKeys = {} #information according to the key of the dict
     dbUpdateObj = {'_id':fileName,'filePath':filePath}
     for columnName in columnNames:
-        mapOfInfo = informationRetreval.analyiseTheFrame(dataFrameObj,columnName)
-        mapOfInfo = removeTheKey(mapOfInfo,'dataFrame')
-        analysisAlongTheKeys[columnName] = {'analysis':mapOfInfo}
+        if columnName not in blackListColumns:
+            mapOfInfo = informationRetreval.analyiseTheFrame(dataFrameObj,columnName,blackListColumns)
+            mapOfInfo = removeTheKey(mapOfInfo,'dataFrame')
+            analysisAlongTheKeys[columnName] = {'analysis':mapOfInfo}
     dbUpdateObj['analysedData'] = analysisAlongTheKeys
     mongoObj = collectionDb.update_many(
         {'_id': fileName},

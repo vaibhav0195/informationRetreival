@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <!--<script type="text/javascript" src="https://www.google.com/jsapi"></script>-->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -124,25 +126,62 @@
         </div>
     </div>
 
-    <div id= 'imageResponse' class="row" style="visibility: hidden;">
-        <div class="col-md-4"></div>
-        <div class="col-md-4">
-            <div class="table-responsive" id="columnTodataType">
-                <table id='nameAndDtypeOfColumn' class="table table-striped table-bordered table-hover table-condensed">
-                    <thead class="thead-dark">
-                    <tr>
-                        <th style="text-align: center;">Name Of Column</th>
-                        <th style="text-align: center;">Data Type Of Column</th>
-                    </tr>
-                    </thead>
-                    <tbody>
+    <div class="row" >
+        <div id= 'imageResponse' style="visibility: hidden;">
+            <!--<div class="col-md-4"></div>-->
+            <!--<div class="col-md-4">-->
+                <div class="table-responsive" id="columnTodataType">
+                    <table id='nameAndDtypeOfColumn' class="table table-striped table-bordered table-hover table-condensed">
+                        <thead class="thead-dark">
 
-                    </tbody>
-                </table>
-            </div>
+                        <tr>
+                            <th style="text-align: center;">Name Of Column</th>
+                            <th style="text-align: center;">Data Type Of Column</th>
+                            <th style="text-align: center;">Add meta Data if present</th>
+                        </tr>
+
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+            <!--</div>-->
+            <!--<div class="col-md-4"></div>-->
         </div>
-        <div class="col-md-4"></div>
+        <div id= 'modeDataToUse' style="visibility: hidden;">
+            <!--<div class="col-md-4"></div>-->
+            <!--<div class="col-md-4">-->
+                <div class="table-responsive" id="columnUniqueValuesAndTheMode" style="overflow-x:auto; overflow-y:auto;">
+                    <table id='uniqueValuesAndMode' class="table table-striped table-bordered table-hover table-condensed">
+                        <thead class="thead-dark">
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+            <!--</div>-->
+            <!--<div class="col-md-4"></div>-->
+        </div>
     </div>
+    <div class="row">
+        <div class="col-md-6" id="pieChartRow">
+
+        </div>
+        <!--<div class="col-md-6" id="baChartRow">-->
+            <!---->
+        <!--</div>-->
+    <div/>
+
+    <div class="row">
+        <div class="col-md-6" id="pieChartCol">
+
+        </div>
+        <!--<div class="col-md-6" id="baChartRow">-->
+            <!---->
+        <!--</div>-->
+    <div/>
 </body>
 <script src="/static/js/datacommunicate.js"></script>
 </html>
