@@ -123,8 +123,10 @@ $(document).on("click", "#doAnalysis", function(){
                 nameOfuniqueValues = parsedData.columnValues
                 fileName = parsedData.fileName
                 headerNames = parsedData.columnHeaders
+                distributionData = parsedData.distribution
                 //tableID,columnData,idofTableValues,headerValues
                 //datatowrite,elementType,classListString,idToAssign,data-[name],valueofit,typeOfelement
+                var rowChartData = maketheDataForGoogleChartFormat(distributionData,columnToAnalyse,nameOfFile);
                 var elementtype = []
                 for (var i =0 ;i<headerNames.length; i++)
                     {
@@ -185,6 +187,7 @@ $(document).on("click", "#doAnalysis", function(){
                     columnDataHeader.push(rowData)
 
                 }
+                drawPiewChart(rowChartData,'pieChartHeader')
 
                  $("#uploaddiv").show();
             }
@@ -395,7 +398,8 @@ function drawPiewChart(dataToshow,idOfElement)
         var headers = dataToshow[0]
         var options = {
           title: 'data of '+headers[0]+' at different '+headers[1],
-          'width':550, 'height':400
+          'width':550, 'height':400,
+              sliceVisibilityThreshold: 0
         };
 
         var chart = new google.visualization.PieChart(document.getElementById(idOfElement));

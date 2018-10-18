@@ -33,6 +33,92 @@ def getTheColmnNames(dataFrameObj,blackList=['Unnamed: 0']):
 
     return nameOfHeaders,mapOfDtypeToCol
 
+def findTheIndexOfSubString(arrayOfIndex=[0,1,3,4]):
+
+    listOfIndexes = []
+    prevIndexValue=-1 #value of the character
+    prevIndexInString = -1 # value of the index to slice
+    newSubString = False
+    substringIndexList = []
+    for index,indexValueOfString in enumerate(arrayOfIndex):
+        if index==0:
+            prevIndexValue =indexValueOfString
+            prevIndexInString=index
+        elif index >=1:
+            if indexValueOfString-prevIndexValue == 1:
+                #same occuerence of words
+                if newSubString:
+                    if len(substringIndexList) >0:
+                        listOfIndexes.append(substringIndexList)
+                    substringIndexList =[]
+                    newSubString = False
+                substringIndexList.append(prevIndexValue)
+                prevIndexValue = indexValueOfString
+                prevIndexInString = index
+            else:
+                substringIndexList.append(prevIndexValue)
+                prevIndexValue = indexValueOfString
+                prevIndexInString = index
+                newSubString=True
+        if index == arrayOfIndex.shape[0]-1:
+            # if indexValueOfString - prevIndexValue ==0 :
+            substringIndexList.append(indexValueOfString)
+            listOfIndexes.append(substringIndexList)
+
+    return listOfIndexes
+
+def findTheStringsforColumn(listOfStrings):
+    '''
+    this function returns the all the posible substrings for the given numbers of strings in listOfstrings
+    :param listOfStrings: [list of strings]
+    :return: {name of substring:its freqvalue}
+    '''
+    # listofSubStrings = []
+    bagOfCharacters = {}
+    charctersIndex = {}
+    charactorIndex = 1
+
+    mapOfStringToItsCode = {}
+    substringfreqcounter = {}
+    for stringToUse in listOfStrings:
+        charPresent = list(stringToUse)
+        for charconsider in charPresent:
+            if charconsider in bagOfCharacters:
+                bagOfCharacters[charconsider] +=bagOfCharacters[charconsider]
+            else:
+                charctersIndex[charconsider] = charactorIndex
+                charactorIndex +=1
+                bagOfCharacters[charconsider] = 1
+
+        charcterCodes = np.asarray([charctersIndex[idx] for idx in charPresent])
+
+        if len(mapOfStringToItsCode.keys()) > 0:
+            #do the minusthing
+            for prevString in mapOfStringToItsCode:
+                charcterCodesPrevious = mapOfStringToItsCode[prevString]
+                subtractionPrev = charcterCodes-charcterCodesPrevious
+                subtractionPresent = charcterCodesPrevious-charcterCodes
+                locationPrev = np.where(subtractionPrev==0)[0]
+                listOfIndexes = findTheIndexOfSubString(locationPrev)
+                for listOfIndex in listOfIndexes:
+                    startingIndex = listOfIndex[0]
+                    endingIndex = listOfIndex[-1]
+                    substring = prevString[startingIndex:endingIndex+1]
+                    # listofSubStrings.append(substring)
+                    if substringfreqcounter.has_key(substring):
+                        substringfreqcounter[substring] = substringfreqcounter[substring]+1
+                    else:
+                        substringfreqcounter[substring] = 1
+                print 'got the values'
+                # locationNext = np.where(subtractionPresent==0)
+
+            print
+        mapOfStringToItsCode[stringToUse] = charcterCodes
+
+    # listofSubStrings = list(set(listofSubStrings))
+    uniqueValuesDescending = sorted(substringfreqcounter, key=substringfreqcounter.get, reverse=True)
+    return substringfreqcounter,uniqueValuesDescending[0]
+
 def doBasicCalulation(dataFrameObj):
     meanOfAllColumns    = dataFrameObj.mean()
     medianOfAllColumns  = dataFrameObj.median()
@@ -58,6 +144,9 @@ def getMappingOfHeaderAndDataFrame(dataFrameObj,columnNameToAnalyise,blackList=[
     '''
     mapNameToDf = {}
     uniqueValuesForTheColumnName = dataFrameObj[columnNameToAnalyise].unique()
+    uniqueValuesforThecolumn = dict(dataFrameObj[columnNameToAnalyise].value_counts())
+    # uniqueValuesforThecolumn = {str(k).replace('.', ':;:'): int(v) for k, v in uniqueValuesforThecolumn.iteritems()}
+    # uniqueValuesForTheColumnName = uniqueValuesforThecolumn.keys()
     for colName in uniqueValuesForTheColumnName:
         if colName in blackList:
             continue
@@ -67,9 +156,13 @@ def getMappingOfHeaderAndDataFrame(dataFrameObj,columnNameToAnalyise,blackList=[
         filterReview = dataFrameObj[columnNameToAnalyise]==colName
         filtered_reviews = dataFrameObj[filterReview]
         mean,median,stdDev,maxVal,minVal = doBasicCalulation(filtered_reviews)
-        infoMap = {'mean':mean,'median':median,'stdDev':stdDev
-                    ,'maxVal':maxVal,'minVal':minVal,'dataFrame':filtered_reviews}
-        mapNameToDf[str(colName).replace('.','_-_')] = infoMap
+        try:
+            infoMap = {'totalNumValues':uniqueValuesforThecolumn[colName],'mean':mean,'median':median,'stdDev':stdDev
+                        ,'maxVal':maxVal,'minVal':minVal,'dataFrame':filtered_reviews}
+            mapNameToDf[str(colName).replace('.', ':;:')] = infoMap
+        except Exception,e:
+            logger.exception(e)
+
 
     return mapNameToDf
 
@@ -189,7 +282,8 @@ def calculateDistributionOfDatadataFrame(mapColumnNameToFrame,columnNameToAnalys
                     distributionDataForColumn[columnName]['mode'] = None
                 else:
                     distributionDataForColumn[columnName]['mode'] = modeValuesForcolumn[0]
-        mapUniqueColData[str(uniqueValuesOfColumn)] = distributionDataForColumn
+        mapUniqueColData[str(uniqueValuesOfColumn)] = {'dataAlongDifferentColumn':distributionDataForColumn,
+                                                       'totalNumValues':mapColumnNameToFrame[uniqueValuesOfColumn]['totalNumValues']}
 
 
     return mapUniqueColData
@@ -197,6 +291,7 @@ def calculateDistributionOfDatadataFrame(mapColumnNameToFrame,columnNameToAnalys
 def analyiseTheFrame(dataFrameObj,columnNameToAnalyise='platform',blackList=['Unnamed: 0']):
     # dataFrameObj.fillna(0)
     # jsonPath = saveDir+columnNameToAnalyise+'.json'
+    print 'doing with the basic analysis for {}'.format(columnNameToAnalyise)
     headerNames,mapOfDtypetoCol = getTheColmnNames(dataFrameObj,blackList)
     headerNames = list(set(headerNames)-set(blackList))
     mapColNameToFrame = getMappingOfHeaderAndDataFrame(dataFrameObj,columnNameToAnalyise,blackList)
@@ -204,13 +299,25 @@ def analyiseTheFrame(dataFrameObj,columnNameToAnalyise='platform',blackList=['Un
     mapColNameToFrame = calculateTheModeDataForStringObject(mapColNameToFrame,columnNameToAnalyise,blackList)
     mapColNameToFrame = calculateDistributionOfDatadataFrame(mapColNameToFrame,columnNameToAnalyise,blackList)
     # mapColNameToFrame = doInterColumnAnalysis(mapColNameToFrame,headerNames)
-    print 'done with the basic analysis'
+    print 'done with the basic analysis for {}'.format(columnNameToAnalyise)
     return mapColNameToFrame
 
+
+
 if __name__=='__main__':
-    csvPath = '/home/yoda/ign_subset.csv'
-    reviews = pd.read_csv(csvPath)
-    saveDir = '/home/gabbar/mlocr_data/informationretreival/jsonFolder'
-    analyiseTheFrame(reviews,'release_year')
+    matchedString = '20802713'
+    rollNumbers = []
+    for i in range(1,128):
+        if i <=9:
+            rollNumbers.append('00'+str(i)+matchedString)
+        elif i >=10 and i<=99:
+            rollNumbers.append('0'+str(i)+matchedString)
+        else:
+            rollNumbers.append(str(i) + matchedString)
+    findTheStringsforColumn(rollNumbers)
+    # csvPath = '/home/yoda/ign_subset.csv'
+    # reviews = pd.read_csv(csvPath)
+    # saveDir = '/home/gabbar/mlocr_data/informationretreival/jsonFolder'
+    # analyiseTheFrame(reviews,'release_year')
 # nameOfColumns = getTheColmnNames(reviews)
 # print nameOfColumns
