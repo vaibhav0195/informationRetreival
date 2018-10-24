@@ -2,11 +2,20 @@
 <html>
 <head>
     <!--<script type="text/javascript" src="https://www.google.com/jsapi"></script>-->
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!--<link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">-->
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <!--<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>-->
+    <!--<script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>-->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="/static/css/bootstrap-theme.min.css">
+
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>-->
+    <!--<link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">-->
+    <!--<link rel="stylesheet" href="/static/css/bootstrap-theme.min.css">-->
     <script src="/static/js/upload.js"></script>
     <style>
         row-fluid{
@@ -163,6 +172,25 @@
             <!--</div>-->
             <!--<div class="col-md-4"></div>-->
         </div>
+    </div>
+    <div class="row" id="sliderDiv">
+        <div id='slidervalues' style="visibility: hidden;">
+          <form method="post" id="formdataSlider">
+              <!--<div data-role="rangeslider" id="rangeslider">-->
+                <!--<label id="minLabel" for="minrangevalue" >Min</label> &lt;!&ndash;for="price-min"&ndash;&gt;-->
+                <!--<input id='minrangevalue' name='minrangevalue' type="range" > &lt;!&ndash;name="price-min" id="price-min" value="200" min="0" max="1000"&ndash;&gt;-->
+                <!--<label id="maxLabel" for="maxrangevalue" >Max</label> &lt;!&ndash;for="price-max"&ndash;&gt;-->
+                <!--<input id='maxrangevalue' name="maxrangevalue" type="range" > &lt;!&ndash;name="price-max" id="price-max" value="800" min="0" max="1000"&ndash;&gt;-->
+              <!--</div>-->
+              <!--<div data-role="rangeslider" id="rangeslider2">-->
+                <!--<label id="minLabel2" for="minrangevalue2" >Min</label> &lt;!&ndash;for="price-min"&ndash;&gt;-->
+                <!--<input id='minrangevalue2' name='minrangevalue2' type="range" > &lt;!&ndash;name="price-min" id="price-min" value="200" min="0" max="1000"&ndash;&gt;-->
+                <!--<label id="maxLabel2" for="maxrangevalue2" >Max</label> &lt;!&ndash;for="price-max"&ndash;&gt;-->
+                <!--<input id='maxrangevalue2' name="maxrangevalue2" type="range" > &lt;!&ndash;name="price-max" id="price-max" value="800" min="0" max="1000"&ndash;&gt;-->
+              <!--</div>-->
+                <input id='rangeselectupload' type="submit" data-inline="true" value="Submit">
+          </form>
+         </div>
     </div>
     <div class="row">
         <div class="col-md-4">

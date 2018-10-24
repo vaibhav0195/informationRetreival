@@ -302,22 +302,31 @@ def analyiseTheFrame(dataFrameObj,columnNameToAnalyise='platform',blackList=['Un
     print 'done with the basic analysis for {}'.format(columnNameToAnalyise)
     return mapColNameToFrame
 
-
+def doRangeAnalysis(dataFrameObj,pandasQuery,columnNameToAnalyise,blackList):
+    filtered_reviews = dataFrameObj.query(pandasQuery)
+    # filtered_reviews = dataFrameObj[filteredObj]
+    mapColNameToFrame = getMappingOfHeaderAndDataFrame(filtered_reviews, columnNameToAnalyise, blackList)
+    # numHeaders = len(headerNames)
+    mapColNameToFrame = calculateTheModeDataForStringObject(mapColNameToFrame, columnNameToAnalyise, blackList)
+    mapColNameToFrame = calculateDistributionOfDatadataFrame(mapColNameToFrame, columnNameToAnalyise, blackList)
+    # mapColNameToFrame = doInterColumnAnalysis(mapColNameToFrame,headerNames)
+    print 'done with the basic analysis for {}'.format(columnNameToAnalyise)
+    return mapColNameToFrame
 
 if __name__=='__main__':
-    matchedString = '20802713'
-    rollNumbers = []
-    for i in range(1,128):
-        if i <=9:
-            rollNumbers.append('00'+str(i)+matchedString)
-        elif i >=10 and i<=99:
-            rollNumbers.append('0'+str(i)+matchedString)
-        else:
-            rollNumbers.append(str(i) + matchedString)
-    findTheStringsforColumn(rollNumbers)
-    # csvPath = '/home/yoda/ign_subset.csv'
-    # reviews = pd.read_csv(csvPath)
-    # saveDir = '/home/gabbar/mlocr_data/informationretreival/jsonFolder'
-    # analyiseTheFrame(reviews,'release_year')
+    # matchedString = '20802713'
+    # rollNumbers = []
+    # for i in range(1,128):
+    #     if i <=9:
+    #         rollNumbers.append('00'+str(i)+matchedString)
+    #     elif i >=10 and i<=99:
+    #         rollNumbers.append('0'+str(i)+matchedString)
+    #     else:
+    #         rollNumbers.append(str(i) + matchedString)
+    # findTheStringsforColumn(rollNumbers)
+    csvPath = '/home/yoda/ign_subset.csv'
+    reviews = pd.read_csv(csvPath)
+    saveDir = '/home/gabbar/mlocr_data/informationretreival/jsonFolder'
+    analyiseTheFrame(reviews,'release_year')
 # nameOfColumns = getTheColmnNames(reviews)
 # print nameOfColumns
