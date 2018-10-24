@@ -115,6 +115,7 @@ $(document).on("click", "#doAnalysis", function(){
        async: true,
        success: function (data) {
             $("#modeDataToUse").css('visibility',"visible");
+            delTable('uniqueValuesAndMode')
 //            $("#imageResponse").css('visibility',"hidden");
 //            $(".DocumentItem1").append("<div class=\"textcont\"></div>");
             parsedData = data
