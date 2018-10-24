@@ -1,10 +1,12 @@
 google.charts.load('current', {'packages':['corechart']});
-function clearTable(tableId)
+
+function delTable(tableID)
 {
- var tableRef = document.getElementById(tableId);
- while ( tableRef.rows.length > 0 )
+ var tableElem = document.getElementById(tableID);
+ var rowCount = tableElem.rows.length;
+ for (var i=0;i<rowCount;i++)
  {
-  tableRef.deleteRow(0);
+    tableElem.deleteRow(0);
  }
 }
 
@@ -307,6 +309,7 @@ $(document).on("click", "#rangeselectupload", function(){
        async: true,
        success: function (data) {
             $("#modeDataToUse").css('visibility',"visible");
+            delTable('uniqueValuesAndMode')
 //            $("#imageResponse").css('visibility',"hidden");
 //            $(".DocumentItem1").append("<div class=\"textcont\"></div>");
             parsedData = data
@@ -558,18 +561,33 @@ function drawPiewChart(dataToshow,idOfElement)
 
 }
 
+function deleteSliderPrev(classOfDiv)
+{
+    var elements = document.getElementsByClassName(classOfDiv);
+    for (var idx=0;idx<elements.length;idx++)
+    {
+        var currentElem = elements[idx];
+        idOfElem = currentElem.id
+        var element = document.getElementById(idOfElem);
+        element.parentNode.removeChild(element);
+    }
+}
+
 function drawSlider(parsedJson,fileName,columnToAnalyse)
 {
 
 
     var parentForm = document.getElementById("formdataSlider");
     var counterDiv = 0;
+    deleteSliderPrev("sliderDiv")
+    deleteSliderPrev("labelMin")
     for(var key in parsedJson)
     {
         counterDiv +=1
         var div = document.createElement("div");
         div.setAttribute("id","rangeslider_"+key);
         div.setAttribute("data-role","rangeslider");
+        div.setAttribute("class","sliderDiv");
         var dataForColumn = parsedJson[key]
         var minimumValue = dataForColumn[0];
         var maxValue = dataForColumn[dataForColumn.length-1];
@@ -579,10 +597,11 @@ function drawSlider(parsedJson,fileName,columnToAnalyse)
         var labelvaluemax = document.createElement("label");
         labelvaluemin.setAttribute('id','labelvalueMin_'+key)
         labelvaluemin.setAttribute('for','valueMin_'+key)
-        labelvaluemin.innerHTML='Min'
+        labelvaluemin.setAttribute('class','labelMin')
+        labelvaluemin.innerHTML=key
         labelvaluemax.setAttribute('id','labelvalueMax_'+key)
         labelvaluemax.setAttribute('for','valueMax_'+key)
-        labelvaluemax.innerHTML='Max'
+        labelvaluemax.innerHTML=key
         inputvaluemin.setAttribute('id','valueMin_'+key)
         inputvaluemin.setAttribute('class','sliderClassesMin')
         inputvaluemin.setAttribute('name','valueMin_'+key)

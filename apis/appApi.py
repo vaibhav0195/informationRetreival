@@ -62,27 +62,30 @@ def upload_file_browse():
 				mapOfNameToDtype = dict(dtypesOfColumns)
 				mapOfNameToDtype = [(str(nameOfColumn),str(mapOfNameToDtype[nameOfColumn]),nameOfColumn in columnNameToUse) for nameOfColumn in mapOfNameToDtype]
 				#publishing data to queue
-				# dataToPublish = {'filePath':pathOfSavedFile,'fileName':filename}
-				# collectionDbAnalysis = mongoDb.getMongoCollectionClient(host='localhost',
-				# 												port=27017,
-				# 												dbName='informationRetreival',
-				# 												collectionName='dataframeAnalysis')
-                #
-				# collectionDbHeaderAndType = mongoDb.getMongoCollectionClient(host='localhost',
-				# 												port=27017,
-				# 												dbName='informationRetreival',
-				# 												collectionName='dataframeHeadAndDtype')
-				# channel = getQueueObj()
-				# channel.basic_publish(exchange='',
-				# 					  routing_key='informationRetreival',
-				# 					  body=json.dumps(dataToPublish),
-				# 					  properties=pika.BasicProperties(
-				# 						  delivery_mode=2,  # make message persistent
-				# 					  ))
-				# dataToStoreInMongo = {'_id':filename,'filePath':pathOfSavedFile}
-				# dataToStoreInMongoHeadersIndType = {'fileName':filename,'headers':mapOfNameToDtype}
-				# collectionDbAnalysis.insert_one(dataToStoreInMongo)
-				# collectionDbHeaderAndType.insert_one(dataToStoreInMongoHeadersIndType)
+				dataToPublish = {'filePath':pathOfSavedFile,'fileName':filename}
+				collectionDbAnalysis = mongoDb.getMongoCollectionClient(host='localhost',
+																port=27017,
+																dbName='informationRetreival',
+																collectionName='dataframeAnalysis')
+
+				collectionDbHeaderAndType = mongoDb.getMongoCollectionClient(host='localhost',
+																port=27017,
+																dbName='informationRetreival',
+																collectionName='dataframeHeadAndDtype')
+				dataDb = collectionDbAnalysis.find_one({"_id": filename})
+				if dataDb is None:
+
+					channel = getQueueObj()
+					channel.basic_publish(exchange='',
+										  routing_key='informationRetreival',
+										  body=json.dumps(dataToPublish),
+										  properties=pika.BasicProperties(
+											  delivery_mode=2,  # make message persistent
+										  ))
+					dataToStoreInMongo = {'_id':filename,'filePath':pathOfSavedFile}
+					dataToStoreInMongoHeadersIndType = {'fileName':filename,'headers':mapOfNameToDtype}
+					collectionDbAnalysis.insert_one(dataToStoreInMongo)
+					collectionDbHeaderAndType.insert_one(dataToStoreInMongoHeadersIndType)
 				jsonToReturn = {'status':'ok','fileName':filename,'csvHeaders':mapOfNameToDtype}
 			except Exception,e:
 				logger.exception(e)
@@ -108,7 +111,7 @@ def getTheParsedDataFromDb():
 		dataDb = collectionDb.find_one({"_id": fileName})
 		headerTypeForFile =  collectionDbHeaderAndType.find_one({"fileName": fileName})
 		headerListValues = headerTypeForFile['headers']
-		headerType = [(f[0],f[1]) for f in headerListValues if ('int' in f[1]  or 'float' in f[1] ) and (f[0] !=columnName)]
+		headerType = [(f[0],f[1]) for f in headerListValues if ('int' in f[1]  or 'float' in f[1] ) and (f[0] !=columnName) and (f[2] ==True)]
 		mapOfHeaderAndType = {}
 		if len(headerType) >0:
 			mapOfHeaderAndType = Convert(headerType, mapOfHeaderAndType)
@@ -121,7 +124,7 @@ def getTheParsedDataFromDb():
 		if useRange:
 			for numericColumnName in mapOfHeaderAndType.keys():
 				dataForTheNumericColumn = dataDb['processed']['analysedData'][numericColumnName]['analysis']
-				numericvalues = [float(k) for k in dataForTheNumericColumn.keys()]
+				numericvalues = [float(k.replace(':;:','.')) for k in dataForTheNumericColumn.keys()]
 				numericvalues.sort()
 				mapOfHeaderAndType[numericColumnName] = numericvalues
 		if columnName in dataDb['processed']['analysedData']:
@@ -204,19 +207,19 @@ def doingRangeAnalysis():
 		data = json.loads(request.data)
 		fileName = data['fileName']
 		rangeData = data['columnRangeData']
-		columnName = data['columnNametoAnalyse']
+		columnNameToAnalyse = data['columnNametoAnalyse']
 		pandasQuery = ''
 		pathOfSavedFile = os.path.join(folder, fileName)
 		logger.info('downloaded the file')
 
 		dataFrameObj = pd.read_csv(pathOfSavedFile)
-		for columnName in rangeData:
-			minimumvalue = rangeData[columnName]['min']
-			maximumvalue = rangeData[columnName]['max']
-			queryForColumn = '{} <= {} <= {}'.format(minimumvalue,columnName,maximumvalue)
+		for columnNameInRangeData in rangeData:
+			minimumvalue = rangeData[columnNameInRangeData]['min']
+			maximumvalue = rangeData[columnNameInRangeData]['max']
+			queryForColumn = '{} <= {} <= {}'.format(minimumvalue,columnNameInRangeData,maximumvalue)
 			pandasQuery += queryForColumn+'&'
 		pandasQuery = pandasQuery.strip('&')
-		mapOfInfo = informationRetreval.doRangeAnalysis(dataFrameObj,pandasQuery,columnName,[])
+		mapOfInfo = informationRetreval.doRangeAnalysis(dataFrameObj,pandasQuery,columnNameToAnalyse,[])
 
 		collectionDb = mongoDb.getMongoCollectionClient(host='localhost', port=27017,
 														dbName='informationRetreival',
@@ -230,7 +233,7 @@ def doingRangeAnalysis():
 		headerTypeForFile = collectionDbHeaderAndType.find_one({"fileName": fileName})
 		headerListValues = headerTypeForFile['headers']
 		headerType = [(f[0], f[1]) for f in headerListValues if
-					  ('int' in f[1] or 'float' in f[1]) and (f[0] != columnName)]
+					  ('int' in f[1] or 'float' in f[1]) and (f[0] != columnNameToAnalyse) and (f[2] == True)]
 		mapOfHeaderAndType = {}
 		if len(headerType) > 0:
 			mapOfHeaderAndType = Convert(headerType, mapOfHeaderAndType)
@@ -242,7 +245,7 @@ def doingRangeAnalysis():
 		if useRange:
 			for numericColumnName in mapOfHeaderAndType.keys():
 				dataForTheNumericColumn = dataDb['processed']['analysedData'][numericColumnName]['analysis']
-				numericvalues = [float(k) for k in dataForTheNumericColumn.keys()]
+				numericvalues = [float(k.replace(':;:','.')) for k in dataForTheNumericColumn.keys()]
 				numericvalues.sort()
 				mapOfHeaderAndType[numericColumnName] = numericvalues
 
@@ -264,7 +267,7 @@ def doingRangeAnalysis():
 					valueToSetForColumn['relevant'] = True
 				uniqueValueNameMApToMode[uniqueColumnVal][columnValueToAnalyse] = valueToSetForColumn
 		logger.info('got the data from mongo db for {}'.format(fileName))
-		columnHeaders.insert(0, columnName)
+		columnHeaders.insert(0, columnNameToAnalyse)
 		return json.dumps(
 			{
 				'status': 'ok',
